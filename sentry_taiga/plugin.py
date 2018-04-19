@@ -40,22 +40,14 @@ class TaigaOptionsForm(forms.Form):
         help_text=_('Enter your project slug.'),
         required=True)
 
-    taiga_labels = forms.CharField(
-        label=_('Issue Labels'),
-        widget=forms.TextInput(attrs={'placeholder': 'e.g. high, bug'}),
-        help_text=_('Enter comma separated labels you '
-                    'want to auto assign to issues.'),
-        required=False)
-
-
 class TaigaPlugin(IssuePlugin):
-    author = 'RochSystems LLC'
+    author = 'skob via rochsystems'
     author_url = 'http://rochsystems.com/'
     version = sentry_taiga.VERSION
     description = "Integrate Taiga issues by linking a repository to a project"
     resource_links = [
-        ('Bug Tracker', 'https://github.com/rochsystems/sentry-taiga/issues'),
-        ('Source', 'https://github.com/rochsystems/sentry-taiga'),
+        ('Bug Tracker', 'https://github.com/skob/sentry-taiga/issues'),
+        ('Source', 'https://github.com/skob/sentry-taiga'),
     ]
 
     slug = 'taiga'
@@ -76,7 +68,6 @@ class TaigaPlugin(IssuePlugin):
         username = self.get_option('taiga_username', group.project)
         password = self.get_option('taiga_password', group.project)
         project_slug = self.get_option('taiga_project', group.project)
-        labels = self.get_option('taiga_labels', group.project)
         
         tg = TaigaAPI(host=url)
 
@@ -86,9 +77,7 @@ class TaigaPlugin(IssuePlugin):
             raise forms.ValidationError(_('Error Communicating '
                                         'with Taiga: %s') % (e,))
 
-        projects = tg.projects.list()
-        
-        project = projects.get(slug=project_slug)
+        project = tg.projects.get_by_slug(project_slug)
         if project is None:
             raise forms.ValidationError(_('No project found in Taiga with slug %s') % 
                                         (project_slug,))
@@ -97,34 +86,15 @@ class TaigaPlugin(IssuePlugin):
             raise forms.ValidationError(_('Project %s has issues disabled.') % 
                                         (project_slug,))
 
-        default_priority = project.default_priority
-        default_issue_status = project.default_issue_status
-        default_issue_type = project.default_issue_type
-        default_severity = project.default_severity
-
-        if default_priority is None:
-            raise forms.ValidationError(_('Project %s has no default priority. '
-                'Set the default priority in Taiga') % (project.name,))
-        if default_issue_status is None:
-            raise forms.ValidationError(_('Project %s has no default status. '
-                'Set the default issue status in Taiga') % (project.name,))
-        if default_issue_type is None:
-            raise forms.ValidationError(_('Project %s has no default type. '
-                'Set the default issue type in Taiga') % (project.name,))
-        if default_severity is None:
-            raise forms.ValidationError(_('Project %s has no default severity. '
-                'Set the default severity in Taiga') % (project.name,))
-
-        data = {'subject': form_data['title'], 
-            'priority': default_priority, 'status': default_issue_status,
-            'issue_type': default_issue_type, 'severity': default_severity,
-            'description': form_data['description'], 
-            'tags': map(lambda x:x.strip(), labels.split(","))}
+        data = { 'subject': form_data['title'], 'priority': project.priorities.get(name='Low').id,
+                'status': project.issue_statuses.get(name='New').id, 'issue_type': project.issue_types.get(name='Bug').id,
+                'severity': project.severities.get(name='Minor').id,
+                'description': form_data['description']
+               }
 
         issue = project.add_issue(**data)
 
         return issue.ref
-
 
     def get_issue_label(self, group, issue_id, **kwargs):
         return 'TG-%s' % issue_id
