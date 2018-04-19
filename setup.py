@@ -18,7 +18,7 @@ tests_require = [
 
 install_requires = [
     'sentry>=5.0.0',
-    'python-taiga>=0.2.0',
+    'python-taiga>=0.8.0',
 ]
 
 setup(
