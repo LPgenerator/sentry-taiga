@@ -40,22 +40,14 @@ class TaigaOptionsForm(forms.Form):
         help_text=_('Enter your project slug.'),
         required=True)
 
-    taiga_labels = forms.CharField(
-        label=_('Issue Labels'),
-        widget=forms.TextInput(attrs={'placeholder': 'e.g. high, bug'}),
-        help_text=_('Enter comma separated labels you '
-                    'want to auto assign to issues.'),
-        required=False)
-
-
 class TaigaPlugin(IssuePlugin):
-    author = 'RochSystems LLC'
+    author = 'skob via rochsystems'
     author_url = 'http://rochsystems.com/'
     version = sentry_taiga.VERSION
     description = "Integrate Taiga issues by linking a repository to a project"
     resource_links = [
-        ('Bug Tracker', 'https://github.com/rochsystems/sentry-taiga/issues'),
-        ('Source', 'https://github.com/rochsystems/sentry-taiga'),
+        ('Bug Tracker', 'https://github.com/skob/sentry-taiga/issues'),
+        ('Source', 'https://github.com/skob/sentry-taiga'),
     ]
 
     slug = 'taiga'
@@ -76,7 +68,6 @@ class TaigaPlugin(IssuePlugin):
         username = self.get_option('taiga_username', group.project)
         password = self.get_option('taiga_password', group.project)
         project_slug = self.get_option('taiga_project', group.project)
-        labels = self.get_option('taiga_labels', group.project)
         
         tg = TaigaAPI(host=url)
 
@@ -91,8 +82,7 @@ class TaigaPlugin(IssuePlugin):
             raise forms.ValidationError(_('No project found in Taiga with slug %s') % 
                                         (project_slug,))
 
-        default_us_status = project.default_us_status
-
+        default_us_status = project.default_us_status    
         if default_us_status is None:
             raise forms.ValidationError(_('Project %s has no default status. '
                 'Set the default user story status in Taiga') % (project.name,))
@@ -106,7 +96,6 @@ class TaigaPlugin(IssuePlugin):
         us = project.add_user_story(**data)
 
         return us.ref
-
 
     def get_issue_label(self, group, issue_id, **kwargs):
         return 'TG-%s' % issue_id

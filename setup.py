@@ -18,20 +18,20 @@ tests_require = [
 
 install_requires = [
     'sentry>=5.0.0',
-    'python-taiga==0.8.6',
+    'python-taiga>=0.8.0',
 ]
 
 setup(
     name='sentry-taiga',
     version=open('VERSION').read().strip(),
     author='RochSystems LLC',
-    author_email='jordi.llonch@rochsystems.com',
-    url='http://github.com/rochsystems/sentry-taiga',
+    author_email='skob@me.com',
+    url='http://github.com/skob/sentry-taiga',
     description='A Sentry extension which integrates with Taiga.',
     long_description=__doc__,
     license='MIT',
     packages=find_packages(),
-    zip_safe=True,
+    zip_safe=False,
     install_requires=install_requires,
     tests_require=tests_require,
     extras_require={'test': tests_require},
