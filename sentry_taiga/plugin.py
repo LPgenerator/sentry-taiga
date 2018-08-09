@@ -60,7 +60,7 @@ class TaigaPlugin(IssuePlugin):
         return bool(self.get_option('taiga_project', project))
 
     def get_new_issue_title(self, **kwargs):
-        return _('Create Taiga Issue')
+        return _('Create Taiga US')
 
     def create_issue(self, request, group, form_data, **kwargs):
 
@@ -77,24 +77,25 @@ class TaigaPlugin(IssuePlugin):
             raise forms.ValidationError(_('Error Communicating '
                                         'with Taiga: %s') % (e,))
 
-        project = tg.projects.get_by_slug(project_slug)
+        project = tg.projects.get_by_slug(slug=project_slug)
         if project is None:
             raise forms.ValidationError(_('No project found in Taiga with slug %s') % 
                                         (project_slug,))
 
-        if not project.is_issues_activated:
-            raise forms.ValidationError(_('Project %s has issues disabled.') % 
-                                        (project_slug,))
+        default_us_status = project.default_us_status    
+        if default_us_status is None:
+            raise forms.ValidationError(_('Project %s has no default status. '
+                'Set the default user story status in Taiga') % (project.name,))
 
-        data = { 'subject': form_data['title'], 'priority': project.priorities.get(name='Low').id,
-                'status': project.issue_statuses.get(name='New').id, 'issue_type': project.issue_types.get(name='Bug').id,
-                'severity': project.severities.get(name='Minor').id,
-                'description': form_data['description']
-               }
+        data = {
+            'subject': form_data['title'],
+            'status': default_us_status,
+            'description': form_data['description'],
+            'tags': map(lambda x:x.strip(), labels.split(","))}
 
-        issue = project.add_issue(**data)
+        us = project.add_user_story(**data)
 
-        return issue.ref
+        return us.ref
 
     def get_issue_label(self, group, issue_id, **kwargs):
         return 'TG-%s' % issue_id
@@ -103,4 +104,4 @@ class TaigaPlugin(IssuePlugin):
         url = self.get_option('taiga_url', group.project)
         slug = self.get_option('taiga_project', group.project)
 
-        return '%s/project/%s/issue/%s' % (url, slug, issue_id)
+        return '%s/project/%s/us/%s' % (url, slug, issue_id)
